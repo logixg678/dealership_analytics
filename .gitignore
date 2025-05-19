@@ -1,0 +1,94 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/version info into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/ # If you don't want to track user-uploaded media files
+static_root/ # If you collect static files here and don't want to track them
+
+# Virtualenv
+env/ # Your virtual environment folder name
+venv/
+.venv/
+ENV/
+*/activate
+*/activate.bat
+*/activate.ps1
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# SQLite
+*.sqlite3
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Sensitive information (ensure these are never committed)
+*.env # For environment variables if you use python-dotenv
+secrets.json # If you store secrets in a JSON file
+*.pem # Private keys
+
+# Add any other files or directories you want to ignore
