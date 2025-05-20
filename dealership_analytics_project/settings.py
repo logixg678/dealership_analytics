@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'dealership_analytics_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'dealership_db_final',        # Your database name
+        'NAME': 'dealership_demo_db',        # Your database name
         'USER': 'root',            # Your MySQL username
         'PASSWORD': 'root',    # Your MySQL password
         'HOST': 'localhost',                  # Or your DB host (e.g., '127.0.0.1')
