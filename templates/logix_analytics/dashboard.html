@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %} <!-- For number formatting like intcomma -->
+
+{% block title %}Dashboard - {{ block.super }}{% endblock %}
+
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<div class="dashboard-content">
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpi-cards-container">
+        <div class="kpi-card">
+            <h3>Total Dealerships</h3>
+            <div class="value">{{ total_dealerships|intcomma }}</div>
+        </div>
+        <div class="kpi-card">
+            <h3>Vehicles In Stock</h3>
+            <div class="value">{{ vehicles_in_stock_count|intcomma }}</div>
+        </div>
+        <div class="kpi-card">
+            <h3>YTD Retail Sales (Units)</h3>
+            <div class="value">{{ ytd_sales_units|intcomma }}</div>
+        </div>
+        <div class="kpi-card">
+            <h3>YTD Retail Sales (Value)</h3>
+            <div class="value">${{ ytd_sales_value|floatformat:2|intcomma }}</div>
+            <!-- Note: floatformat:2 ensures two decimal places for currency -->
+        </div>
+    </div>
+
+    <!-- Charts will go here in Step 4.4 and 4.5 -->
+    <div class="charts-grid">
+        <div class="chart-container" id="monthly-sales-chart-container">
+            <h3>Monthly Sales Trend (Last 12 Months - Retail Units)</h3>
+            <!-- THIS IS THE IMPORTANT LINE: Replace the <p> tag with <canvas> -->
+            <canvas id="monthlySalesChart"></canvas>
+        </div>
+        <div class="chart-container" id="inventory-status-chart-container">
+            <h3>Inventory Status Breakdown</h3>
+            <!-- Canvas for the inventory status bar chart -->
+            <canvas id="inventoryStatusChart"></canvas>
+        </div>
+        <!-- New Chart: Sales by Dealership -->
+        <div class="chart-container" id="sales-by-dealership-chart-container">
+            <h3>Top Dealerships by Sales (YTD Units)</h3>
+            <canvas id="salesByDealershipChart"></canvas>
+        </div>
+        <!-- Placeholder for Inventory Aging Chart -->
+        <div class="chart-container" id="inventory-aging-chart-container">
+            <h3>Inventory Aging Overview (Dealer Stock)</h3>
+            <canvas id="inventoryAgingChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Styles are in base.html, this is just a reminder if you need page-specific ones */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Data from Django context (passed as JSON strings)
+    // We need to parse these JSON strings back into JavaScript arrays/objects
+    // Using Django's `json_script` template tag is safer to prevent XSS if data could be user-influenced,
+    // but for now, parsing directly from correctly escaped JSON is okay for trusted data.
+    var salesTrendLabels = JSON.parse('{{ sales_trend_labels_json|escapejs }}');
+    var salesTrendValues = JSON.parse('{{ sales_trend_values_json|escapejs }}');
+
+    // Get the canvas element
+    var ctxSales = document.getElementById('monthlySalesChart');
+    if (ctxSales) { // Check if element exists
+        ctxSales = ctxSales.getContext('2d');
+        new Chart(ctxSales, {
+            type: 'line', // Type of chart
+            data: {
+                labels: salesTrendLabels, // X-axis labels
+                datasets: [{
+                    label: 'Retail Sales Units', // Legend label
+                    data: salesTrendValues,      // Y-axis data
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.1, // Makes the line slightly curved
+                    fill: true    // Fills area under the line
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true, // You can set to false if you want to control height explicitly via CSS
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            // Ensure Y-axis ticks are integers if counts are always whole numbers
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                }
+            }
+        });
+    } else {
+        console.error("Canvas element with ID 'monthlySalesChart' not found.");
+    }
+
+    // --- Inventory Status Breakdown Bar Chart ---
+    var inventoryStatusLabels = JSON.parse('{{ inventory_status_labels_json|escapejs }}');
+    var inventoryStatusValues = JSON.parse('{{ inventory_status_values_json|escapejs }}');
+    var ctxInventoryStatus = document.getElementById('inventoryStatusChart');
+
+    if (ctxInventoryStatus) {
+        ctxInventoryStatus = ctxInventoryStatus.getContext('2d');
+        new Chart(ctxInventoryStatus, {
+            type: 'bar', // Changed to 'bar'
+            data: {
+                labels: inventoryStatusLabels,
+                datasets: [{
+                    label: 'Number of Vehicles',
+                    data: inventoryStatusValues,
+                    backgroundColor: [ // You can define an array of colors or a function
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)',
+                        'rgba(255, 159, 64, 0.5)',
+                        'rgba(199, 199, 199, 0.5)',
+                        'rgba(83, 102, 255, 0.5)',
+                        'rgba(40, 159, 64, 0.5)',
+                        'rgba(210, 99, 132, 0.5)'
+                    ],
+                    borderColor: [ // Optional border colors
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)',
+                        'rgba(83, 102, 255, 1)',
+                        'rgba(40, 159, 64, 1)',
+                        'rgba(210, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                indexAxis: 'y', // To make it a horizontal bar chart, easier to read labels. Remove for vertical.
+                scales: {
+                    x: { // For horizontal bar chart, x is the value axis
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    },
+                    y: { // For horizontal bar chart, y is the category axis
+                       // No specific options needed for y-axis labels here unless you want to customize them
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false // Legend is often not needed for a single dataset bar chart
+                    },
+                    title: { // Optional chart title within the canvas
+                        display: true,
+                        text: 'Vehicle Count by Status'
+                    }
+                }
+            }
+        });
+    } else {
+        console.error("Canvas element with ID 'inventoryStatusChart' not found.");
+    }
+
+     // --- Sales by Dealership Bar Chart ---
+    var salesByDealershipLabels = JSON.parse('{{ sales_by_dealership_labels_json|escapejs }}');
+    var salesByDealershipValues = JSON.parse('{{ sales_by_dealership_values_json|escapejs }}');
+    var ctxSalesByDealership = document.getElementById('salesByDealershipChart');
+
+    if (ctxSalesByDealership) {
+        ctxSalesByDealership = ctxSalesByDealership.getContext('2d');
+        new Chart(ctxSalesByDealership, {
+    type: 'bar',
+    data: {
+        labels: salesByDealershipLabels,
+        datasets: [{
+            label: 'Sales Units (YTD)',
+            data: salesByDealershipValues,
+            backgroundColor: [ // Array of colors
+                'rgba(255, 99, 132, 0.5)',
+                'rgba(54, 162, 235, 0.5)',
+                'rgba(255, 206, 86, 0.5)',
+                'rgba(75, 192, 192, 0.5)',
+                'rgba(153, 102, 255, 0.5)'
+                // Add more colors if you expect more than 5 top dealerships
+            ],
+            borderColor: [ // Corresponding border colors
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                // indexAxis: 'y', // Optional: for horizontal bar chart if dealership names are long
+                scales: {
+                    y: { // For vertical bar chart, y is the value axis
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                },
+                plugins: {
+                    legend: { display: true, position: 'top' },
+                    title: { display: true, text: 'Top Dealerships by Sales Units (YTD)' }
+                }
+            }
+        });
+    } else {
+        console.error("Canvas element with ID 'salesByDealershipChart' not found.");
+    }
+
+    var inventoryAgingLabels = JSON.parse('{{ inventory_aging_labels_json|escapejs }}');
+    var inventoryAgingValues = JSON.parse('{{ inventory_aging_values_json|escapejs }}');
+    var ctxInventoryAging = document.getElementById('inventoryAgingChart');
+
+    if (ctxInventoryAging) {
+        ctxInventoryAging = ctxInventoryAging.getContext('2d');
+        new Chart(ctxInventoryAging, {
+    type: 'bar',
+    data: {
+        labels: inventoryAgingLabels, // Should be ["0-30 Days", "31-60 Days", etc.]
+        datasets: [{
+            label: 'Number of Vehicles',
+            data: inventoryAgingValues,
+            backgroundColor: [ // Array of colors for each aging bucket
+                'rgba(75, 192, 192, 0.5)',  // 0-30
+                'rgba(54, 162, 235, 0.5)',  // 31-60
+                'rgba(255, 206, 86, 0.5)', // 61-90
+                'rgba(255, 159, 64, 0.5)', // 91-120
+                'rgba(255, 99, 132, 0.5)'  // 120+
+            ],
+            borderColor: [
+                'rgba(75, 192, 192, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(255, 159, 64, 1)',
+                'rgba(255, 99, 132, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }, // Legend often not needed for single dataset
+                    title: { display: true, text: 'Inventory Aging (Dealer Stock)' }
+                }
+            }
+        });
+    } else {
+        console.error("Canvas element with ID 'inventoryAgingChart' not found.");
+    }
+
+});
+
+</script>
+{% endblock %}
