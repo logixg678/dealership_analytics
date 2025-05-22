@@ -81,9 +81,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'dealership_demo_db',        # Your database name
         'USER': 'root',            # Your MySQL username
-        'PASSWORD': 'Mohammedeman40',    # Your MySQL password
+        'PASSWORD': 'root',    # Your MySQL password
         'HOST': 'localhost',                  # Or your DB host (e.g., '127.0.0.1')
-        'PORT': '3307',                       # Or your DB port
+        'PORT': '3306',                       # Or your DB port
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
